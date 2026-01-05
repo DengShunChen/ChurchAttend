@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code 管理系統 | 高榮禮拜堂</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- 引入 jsQR 函式庫 -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --dark: #1a1a2e;
+      --light: #ffffff;
+      --gray: #f8f9fa;
+      --border: #e0e0e0;
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--dark);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header h1 {
+      font-size: 2em;
+      background: var(--primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 15px;
+    }
+
+    /* Tab Navigation */
+    .tabs {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 10px;
+      margin-bottom: 30px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 10px;
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 15px;
+      background: transparent;
+      color: var(--dark);
+      font-size: 1em;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    .tab-button:hover {
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .tab-button.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Card */
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .card-header h2 {
+      font-size: 1.5em;
+      color: var(--dark);
+    }
+
+    /* Form */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 1em;
+      font-family: 'Noto Sans TC', sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Noto Sans TC', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #667eea;
+      color: #667eea;
+    }
+
+    .btn-outline:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 0.9em;
+    }
+
+    /* Table */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+    }
+
+    thead th {
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    tbody tr:hover {
+      background: rgba(102, 126, 234, 0.05);
+    }
+
+    tbody td {
+      padding: 15px;
+    }
+
+    /* Member Grid */
+    .member-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .member-card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .member-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .member-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .member-info h3 {
+      font-size: 1.3em;
+      margin-bottom: 5px;
+      color: var(--dark);
+    }
+
+    .member-info p {
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    .member-qr {
+      width: 100px;
+      height: 100px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      overflow: hidden;
+    }
+
+    .member-qr img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .member-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    /* QR Code Display */
+    .qr-display {
+      text-align: center;
+      padding: 30px;
+    }
+
+    .qr-display img {
+      max-width: 400px;
+      width: 100%;
+      border-radius: 15px;
+      box-shadow: var(--shadow);
+      margin: 20px 0;
+    }
+
+    .qr-info {
+      background: var(--gray);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+
+    /* Scanner */
+    .scanner-container {
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .scanner-camera-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      display: none;
+      box-shadow: var(--shadow);
+      border: 4px solid #667eea;
+    }
+
+    .scanner-camera-wrapper.active {
+      display: block;
+    }
+
+    #scanner-video {
+      width: 100%;
+      display: block;
+    }
+
+    #scanner-canvas {
+      display: none;
+    }
+
+    .scanner-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 50px solid rgba(0, 0, 0, 0.5);
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-overlay::before {
+      content: '';
+      width: 100%;
+      height: 2px;
+      background: #ff5252;
+      animation: scan-line 2s linear infinite;
+    }
+
+    @keyframes scan-line {
+      0% {
+        transform: translateY(-100px);
+        opacity: 0;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+    }
+
+    .scanner-result {
+      background: var(--gray);
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .scanner-result.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    .scanner-upload-area {
+      border: 2px dashed var(--border);
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .scanner-upload-area:hover {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.05);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 2em;
+      cursor: pointer;
+      color: #666;
+      transition: color 0.3s ease;
+    }
+
+    .modal-close:hover {
+      color: var(--dark);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      align-items: center;
+      gap: 15px;
+      z-index: 2000;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.show {
+      display: flex;
+    }
+
+    .toast.success {
+      border-left: 5px solid #4CAF50;
+    }
+
+    .toast.error {
+      border-left: 5px solid #f44336;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      border: 3px solid rgba(102, 126, 234, 0.3);
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .tabs {
+        flex-direction: column;
+      }
+
+      .member-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1>🏛️ QR Code 管理系統</h1>
+        <p>高榮禮拜堂主日崇拜報到系統</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="showAddMemberModal()">
+          ➕ 新增會友
+        </button>
+        <button class="btn btn-outline" onclick="location.href='/'">
+          🏠 返回首頁
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-button" onclick="switchTab('members')">
+        👥 會友管理
+      </button>
+      <button class="tab-button active" onclick="switchTab('scanner')">
+        📷 QR Code 掃描
+      </button>
+      <button class="tab-button" onclick="switchTab('batch')">
+        📋 批次操作
+      </button>
+      <button class="tab-button" onclick="switchTab('stats')">
+        📊 統計報表
+      </button>
+    </div>
+
+    <!-- Tab: Members -->
+    <div id="tab-members" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2>會友列表</h2>
+          <input type="text" id="search-members" class="form-control" style="max-width: 300px;" placeholder="🔍 搜尋會友..."
+            onkeyup="searchMembers()">
+        </div>
+        <div id="loading" style="display: none;">
+          <div class="spinner"></div>
+          <p style="text-align: center; color: #666;">載入中...</p>
+        </div>
+        <div id="members-grid" class="member-grid"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Scanner -->
+    <div id="tab-scanner" class="tab-content active">
+      <div class="card">
+        <div class="card-header">
+          <h2>QR Code 掃描簽到</h2>
+        </div>
+        <div class="scanner-container">
+
+          <!-- Camera View -->
+          <div id="camera-wrapper" class="scanner-camera-wrapper">
+            <video id="scanner-video" playsinline></video>
+            <canvas id="scanner-canvas"></canvas>
+            <div class="scanner-overlay"></div>
+          </div>
+
+          <!-- Controls -->
+          <div style="text-align: center; margin-bottom: 20px;">
+            <button id="btn-start-camera" class="btn btn-primary" onclick="startCamera()">
+              📹 開啟相機
+            </button>
+            <button id="btn-stop-camera" class="btn btn-secondary" onclick="stopCamera()" style="display: none;">
+              ⏹️ 停止相機
+            </button>
+          </div>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+
+          <!-- File Upload -->
+          <p style="text-align: center; color: #666; margin-bottom: 10px;">或選擇 QR Code 圖片</p>
+          <div class="scanner-upload-area" onclick="document.getElementById('qr-file-input').click()">
+            <p>📁 點擊上傳 QR Code 圖片</p>
+            <input type="file" id="qr-file-input" accept="image/*" style="display: none;"
+              onchange="handleQRFile(event)">
+          </div>
+
+          <!-- Result -->
+          <div id="scanner-result" class="scanner-result">
+            <h3>掃描結果</h3>
+            <div id="scanner-result-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Batch -->
+    <div id="tab-batch" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2>批次操作</h2>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 30px;">
+          <!-- Template Download -->
+          <div style="flex: 1;">
+            <h3>1. 下載範本</h3>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+              請下載 CSV 範本，依照格式填入會友資料 (姓名, 電話, 小組)。
+            </p>
+            <button class="btn btn-secondary" onclick="downloadTemplate()">
+              📄 下載 CSV 範本
+            </button>
+          </div>
+
+          <!-- File Upload -->
+          <div style="flex: 1;">
+            <h3>2. 上傳檔案</h3>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+              選擇填寫好的 CSV 檔案進行匯入。
+            </p>
+            <div style="display: flex; gap: 10px;">
+              <input type="file" id="batch-file" accept=".csv" class="form-control">
+              <button class="btn btn-primary" onclick="importMembers()">
+                📤 開始匯入
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border);">
+
+        <div class="form-row">
+          <button class="btn btn-primary" onclick="printAllQRCodes()">
+            🖨️ 批次列印所有 QR Code
+          </button>
+          <button class="btn btn-success" onclick="exportMembersCSV()">
+            📥 匯出會友資料 (CSV)
+          </button>
+        </div>
+
+        <!-- Import Results -->
+        <div id="import-result" style="margin-top: 30px; display: none;">
+          <div class="card" style="background: #f8f9fa; border: 1px solid var(--border);">
+            <h3>匯入結果</h3>
+            <div id="import-stats"
+              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 15px 0;">
+              <div style="text-align: center; padding: 10px; background: white; border-radius: 10px;">
+                <div style="font-size: 2em; color: #667eea;">
+                  <span id="stat-total">0</span>
+                </div>
+                <div style="color: #666;">總筆數</div>
+              </div>
+              <div style="text-align: center; padding: 10px; background: white; border-radius: 10px;">
+                <div style="font-size: 2em; color: #4CAF50;">
+                  <span id="stat-inserted">0</span>
+                </div>
+                <div style="color: #666;">成功新增</div>
+              </div>
+              <div style="text-align: center; padding: 10px; background: white; border-radius: 10px;">
+                <div style="font-size: 2em; color: #FF9800;">
+                  <span id="stat-skipped">0</span>
+                </div>
+                <div style="color: #666;">重複跳過</div>
+              </div>
+            </div>
+
+            <div id="import-errors" style="display: none;">
+              <h4 style="color: #f44336; margin-bottom: 10px;">錯誤詳情</h4>
+              <ul id="error-list" style="color: #d32f2f; background: #ffebee; padding: 15px 30px; border-radius: 10px;">
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Statistics -->
+    <div id="tab-stats" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2>📊 統計報表</h2>
+          <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">🔄 重新整理</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px;">
+          <!-- Weekly Chart -->
+          <div
+            style="background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #eee;">
+            <h3 style="margin-bottom: 15px; color: #333;">📅 本週出勤趨勢</h3>
+            <canvas id="weeklyChart"></canvas>
+          </div>
+
+          <!-- Session Chart -->
+          <div
+            style="background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #eee;">
+            <h3 style="margin-bottom: 15px; color: #333;">🕒 場次人數分佈</h3>
+            <canvas id="sessionChart"></canvas>
+          </div>
+
+          <!-- Monthly Chart -->
+          <div
+            style="background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #eee;">
+            <h3 style="margin-bottom: 15px; color: #333;">👥 本月會友/訪客比例</h3>
+            <canvas id="monthlyChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal: Shepherd Card (Pastoral Care Detail) -->
+  <div id="shepherd-card-modal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <div>
+          <h2 id="sc-name" style="margin-bottom: 5px;">會友姓名</h2>
+          <div style="font-size: 0.9em; color: #666;">
+            <span id="sc-group" style="margin-right: 15px;">👥 小組</span>
+            <span id="sc-phone">📞 09xx-xxx-xxx</span>
+          </div>
+          <div style="font-size: 0.85em; color: #888; margin-top: 4px;">
+            📅 最近出席: <span id="sc-last-attended">無記錄</span>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeModal('shepherd-card-modal')">&times;</button>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="tabs" style="margin-bottom: 20px; padding: 5px;">
+        <button class="tab-button active" onclick="switchModalTab('profile')">📋 基本資料</button>
+        <button class="tab-button" onclick="switchModalTab('notes')">📖 牧養日誌</button>
+        <button class="tab-button" onclick="switchModalTab('worship')">⛪ 教會生活</button>
+        <button class="tab-button" onclick="switchModalTab('qrcode')">📱 QR Code</button>
+      </div>
+
+      <!-- Tab: Profile -->
+      <div id="modal-tab-profile" class="modal-tab-content active">
+        <form id="profile-form" onsubmit="updateProfile(event)">
+          <input type="hidden" name="id" id="sc-id">
+          <div class="form-row">
+            <div class="form-group">
+              <label>生日 (Birthday)</label>
+              <input type="text" name="birthday" id="sc-input-birthday" class="form-control" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" name="email" id="sc-input-email" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>地址 (Address)</label>
+            <input type="text" name="address" id="sc-input-address" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>LINE ID</label>
+            <input type="text" name="line_id" id="sc-input-line_id" class="form-control">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">💾 儲存資料</button>
+        </form>
+      </div>
+
+      <!-- Tab: Shepherding Notes -->
+      <div id="modal-tab-notes" class="modal-tab-content" style="display: none;">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <input type="text" id="new-note-content" class="form-control" placeholder="輸入關懷事項 / 代禱內容...">
+          <select id="new-note-category" class="form-control" style="width: 120px;">
+            <option value="general">一般</option>
+            <option value="visit">探訪</option>
+            <option value="prayer">代禱</option>
+          </select>
+          <button class="btn btn-success" onclick="addNote()">➕ 新增</button>
+        </div>
+        <div id="notes-timeline" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Tab: Worship Life (Placeholder) -->
+      <div id="modal-tab-worship" class="modal-tab-content" style="display: none;">
+        <div id="worship-life-content">
+          <p style="text-align: center; color: #666;">載入中... ⏳</p>
+        </div>
+      </div>
+
+      <!-- Tab: QR Code -->
+      <div id="modal-tab-qrcode" class="modal-tab-content" style="display: none; text-align: center;">
+        <img id="sc-qr-image" src="" alt="QR Code" style="max-width: 250px; margin-bottom: 20px;">
+        <br>
+        <button class="btn btn-secondary" onclick="printSingleQR(document.getElementById('sc-id').value)">🖨️ 列印此 QR
+          Code</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Member -->
+  <div id="add-member-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>新增會友</h2>
+        <button class="modal-close" onclick="closeModal('add-member-modal')">&times;</button>
+      </div>
+      <form id="add-member-form" onsubmit="addMember(event)">
+        <div class="form-group">
+          <label>姓名 *</label>
+          <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>電話</label>
+            <input type="tel" name="phone" class="form-control" placeholder="0912345678">
+          </div>
+          <div class="form-group">
+            <label>小組</label>
+            <input type="text" name="group" class="form-control" placeholder="青年團契">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">
+            ✅ 新增並生成 QR Code
+          </button>
+          <button type="button" class="btn btn-outline" onclick="closeModal('add-member-modal')">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: View QR Code -->
+  <div id="qr-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="qr-modal-title">會友 QR Code</h2>
+        <button class="modal-close" onclick="closeModal('qr-modal')">&times;</button>
+      </div>
+      <div class="qr-display">
+        <img id="qr-modal-image" src="" alt="QR Code">
+        <div class="qr-info">
+          <p><strong>姓名:</strong> <span id="qr-modal-name"></span></p>
+          <p><strong>電話:</strong> <span id="qr-modal-phone"></span></p>
+          <p><strong>小組:</strong> <span id="qr-modal-group"></span></p>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-primary" onclick="printQRCode()">
+            🖨️ 列印
+          </button>
+          <button class="btn btn-success" onclick="downloadQRCode()">
+            💾 下載
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-message"></span>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5050';
+    let allMembers = [];
+    let currentMember = null;
+    let videoStream = null;
+    let isScanning = false;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMembers();
+      // Check current tab from hash or default to scanner
+      if (window.location.hash) {
+        const tab = window.location.hash.substring(1);
+        switchTab(tab);
+      }
+    });
+
+    // Tab Switching
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      // Find button by onclick text content match or index (simplified)
+      const buttons = document.querySelectorAll('.tab-button');
+      if (tabName === 'members') buttons[0].classList.add('active');
+      if (tabName === 'scanner') buttons[1].classList.add('active');
+      if (tabName === 'batch') buttons[2].classList.add('active');
+      if (tabName === 'stats') buttons[3].classList.add('active');
+
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      // Load data if switching to stats
+      if (tabName === 'stats') {
+        loadDashboard();
+      }
+
+      // Stop camera if switching away from scanner
+      if (tabName !== 'scanner') {
+        stopCamera();
+      }
+    }
+
+    // Camera Logic
+    async function startCamera() {
+      const video = document.getElementById('scanner-video');
+      const canvasElement = document.getElementById('scanner-canvas');
+      const canvas = canvasElement.getContext('2d');
+      const resultDiv = document.getElementById('scanner-result');
+      const resultContent = document.getElementById('scanner-result-content');
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        videoStream = stream;
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+        video.play();
+
+        document.getElementById('camera-wrapper').classList.add('active');
+        document.getElementById('btn-start-camera').style.display = 'none';
+        document.getElementById('btn-stop-camera').style.display = 'inline-block';
+
+        isScanning = true;
+        requestAnimationFrame(tick);
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        showToast('無法存取相機，請確認權限或使用 HTTPS', 'error');
+      }
+
+      function tick() {
+        if (!isScanning) return;
+
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvasElement.height = video.videoHeight;
+          canvasElement.width = video.videoWidth;
+          canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+
+          const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert",
+          });
+
+          if (code) {
+            console.log("Found QR code", code.data);
+            // Beep sound
+            // new Audio('beep.mp3').play().catch(() => {});
+
+            // Stop scanning temporarily
+            isScanning = false;
+
+            // Process the code
+            processQRCode(code.data);
+          }
+        }
+
+        if (isScanning) {
+          requestAnimationFrame(tick);
+        }
+      }
+    }
+
+    function stopCamera() {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      isScanning = false;
+      document.getElementById('camera-wrapper').classList.remove('active');
+      document.getElementById('btn-start-camera').style.display = 'inline-block';
+      document.getElementById('btn-stop-camera').style.display = 'none';
+    }
+
+    async function processQRCode(qrData) {
+      const resultContent = document.getElementById('scanner-result-content');
+      const resultDiv = document.getElementById('scanner-result');
+
+      resultDiv.classList.add('show');
+      resultContent.innerHTML = `<p class="processing">🔄 正在簽到中...</p>`;
+
+      try {
+        const response = await fetch(`${API_URL}/attendance/scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            qr_data: qrData,
+            session: 'noon' // Default session
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          resultContent.innerHTML = `
+                        <div style="color: #4CAF50; text-align: center;">
+                            <h2 style="font-size: 2em; margin-bottom: 10px;">✅ 簽到成功</h2>
+                            <p style="font-size: 1.2em;">${result.name}</p>
+                            <p style="color: #666;">${new Date(result.timestamp).toLocaleTimeString()}</p>
+                        </div>
+                    `;
+          showToast(`${result.name} 簽到成功！`, 'success');
+
+          // Restart scanning after 3 seconds
+          setTimeout(() => {
+            resultDiv.classList.remove('show');
+            isScanning = true;
+            requestAnimationFrame(startCameraRequestWrapper);
+          }, 3000);
+        } else if (response.status === 409) {
+          resultContent.innerHTML = `
+                        <div style="color: #ff9800; text-align: center;">
+                            <h2 style="font-size: 1.5em; margin-bottom: 10px;">⚠️ 已經簽到過了</h2>
+                            <p>${result.error}</p>
+                        </div>
+                    `;
+          // Restart scanning after 3 seconds
+          setTimeout(() => {
+            resultDiv.classList.remove('show');
+            isScanning = true;
+            requestAnimationFrame(startCameraRequestWrapper);
+          }, 3000);
+        } else {
+          throw new Error(result.error || '簽到失敗');
+        }
+      } catch (error) {
+        resultContent.innerHTML = `
+                    <div style="color: #f44336; text-align: center;">
+                        <h2 style="font-size: 1.5em; margin-bottom: 10px;">❌ 簽到失敗</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+        showToast(error.message, 'error');
+        // Restart scanning after 3 seconds
+        setTimeout(() => {
+          resultDiv.classList.remove('show');
+          isScanning = true;
+          requestAnimationFrame(startCameraRequestWrapper);
+        }, 3000);
+      }
+    }
+
+    // Helper wrapper to restart animation frame with correct context
+    function startCameraRequestWrapper() {
+      const video = document.getElementById('scanner-video');
+      const canvasElement = document.getElementById('scanner-canvas');
+      const canvas = canvasElement.getContext('2d');
+
+      function tick() {
+        if (!isScanning) return;
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvasElement.height = video.videoHeight;
+          canvasElement.width = video.videoWidth;
+          canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+
+          const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert",
+          });
+
+          if (code) {
+            isScanning = false;
+            processQRCode(code.data);
+          }
+        }
+        if (isScanning) requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    // Load Members
+    async function loadMembers() {
+      document.getElementById('loading').style.display = 'block';
+      try {
+        const response = await fetch(`${API_URL}/members`);
+        allMembers = await response.json();
+        displayMembers(allMembers);
+      } catch (error) {
+        console.error('Error loading members:', error);
+        // showToast('載入會友資料失敗', 'error');
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    // Display Members
+    function displayMembers(members) {
+      const grid = document.getElementById('members-grid');
+      if (members.length === 0) {
+        grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+                        <p>目前沒有會友資料</p>
+                        <button class="btn btn-primary" onclick="showAddMemberModal()" style="margin-top: 20px;">
+                            新增第一位會友
+                        </button>
+                    </div>
+                `;
+        return;
+      }
+
+      grid.innerHTML = members.map(member => `
+                <div class="member-card" onclick="openShepherdCard(event, '${member._id}')">
+                    <div class="member-card-header">
+                        <div class="member-info">
+                            <h3>${member.name}</h3>
+                            <p>📞 ${member.phone || '未設定'}</p>
+                            <p>👥 ${member.group || '未分組'}</p>
+                        </div>
+                        <div class="member-qr">
+                            <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2em;">
+                                QR
+                            </div>
+                        </div>
+                    </div>
+                    <div class="member-actions" onclick="event.stopPropagation()">
+                        <button class="btn btn-sm btn-primary" onclick="viewMemberQR('${member._id}')">
+                            📱 查看 QR
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="printSingleQR('${member._id}')">
+                            🖨️ 列印
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteMember('${member._id}')" style="background: #ff4757; color: white;">
+                             🗑️ 刪除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    // Search Members
+    function searchMembers() {
+      const query = document.getElementById('search-members').value.toLowerCase();
+      const filtered = allMembers.filter(member =>
+        member.name.toLowerCase().includes(query) ||
+        (member.phone && member.phone.includes(query)) ||
+        (member.group && member.group.toLowerCase().includes(query))
+      );
+      displayMembers(filtered);
+    }
+
+    // Show Add Member Modal
+    function showAddMemberModal() {
+      document.getElementById('add-member-modal').classList.add('show');
+    }
+
+    // Close Modal
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('show');
+    }
+
+    // Add Member
+    async function addMember(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const data = {
+        name: formData.get('name'),
+        phone: formData.get('phone'),
+        group: formData.get('group')
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          showToast(`${data.name} 新增成功！`, 'success');
+          closeModal('add-member-modal');
+          event.target.reset();
+          loadMembers();
+          setTimeout(() => viewMemberQR(result.member_id), 500);
+        } else {
+          const error = await response.json();
+          showToast(error.error || '新增失敗', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding member:', error);
+        showToast('新增失敗', 'error');
+      }
+    }
+
+    // Delete Member
+    async function deleteMember(memberId) {
+      if (!confirm('🚫 警告：確定要刪除這位會友嗎？\n此動作無法復原，並將移除相關的 QR Code。')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/members/${memberId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          showToast('會友已刪除', 'success');
+          loadMembers();
+        } else {
+          const error = await response.json();
+          showToast(error.error || '刪除失敗', 'error');
+        }
+      } catch (error) {
+        console.error('Error deleting member:', error);
+        showToast('刪除過程發生錯誤', 'error');
+      }
+    }
+
+    // View Member QR Code
+    async function viewMemberQR(memberId) {
+      try {
+        const response = await fetch(`${API_URL}/members/${memberId}/qrcode`);
+        const data = await response.json();
+
+        currentMember = data;
+        document.getElementById('qr-modal-title').textContent = `${data.name} 的 QR Code`;
+        document.getElementById('qr-modal-image').src = data.qr_image;
+        document.getElementById('qr-modal-name').textContent = data.name;
+        document.getElementById('qr-modal-phone').textContent = allMembers.find(m => m._id === memberId)?.phone || '未設定';
+        document.getElementById('qr-modal-group').textContent = allMembers.find(m => m._id === memberId)?.group || '未分組';
+
+        document.getElementById('qr-modal').classList.add('show');
+      } catch (error) {
+        console.error('Error loading QR code:', error);
+        showToast('載入 QR Code 失敗', 'error');
+      }
+    }
+
+    // Print QR Code
+    function printQRCode() {
+      if (!currentMember) return;
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write(`
+                <html>
+                <head>
+                    <title>列印 QR Code - ${currentMember.name}</title>
+                    <style>
+                        body {
+                            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            margin: 0;
+                        }
+                        .qr-card {
+                            max-width: 400px;
+                            padding: 30px;
+                            border: 3px solid #667eea;
+                            border-radius: 15px;
+                            text-align: center;
+                        }
+                        .qr-card h1 { color: #667eea; margin-bottom: 10px; }
+                        .qr-card h2 { color: #333; margin-bottom: 20px; }
+                        .qr-card img { width: 100%; max-width: 300px; margin: 20px 0; }
+                        .qr-card p { color: #666; margin: 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="qr-card">
+                        <h1>高榮禮拜堂</h1>
+                        <h2>${currentMember.name}</h2>
+                        <img src="${currentMember.qr_image}" alt="QR Code">
+                        <p>請於報到時出示此 QR Code</p>
+                    </div>
+                </body>
+                </html>
+            `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+    }
+
+    // Download QR Code
+    function downloadQRCode() {
+      if (!currentMember) return;
+      const link = document.createElement('a');
+      link.href = currentMember.qr_image;
+      link.download = `${currentMember.name}_QRCode.png`;
+      link.click();
+      showToast('QR Code 已下載', 'success');
+    }
+
+    // Print Single QR
+    function printSingleQR(memberId) {
+      viewMemberQR(memberId).then(() => { setTimeout(printQRCode, 500); });
+    }
+
+    // Print All QR Codes
+    async function printAllQRCodes() {
+      if (allMembers.length === 0) {
+        showToast('沒有會友資料可列印', 'error');
+        return;
+      }
+      showToast('準備列印中...', 'success');
+      const printWindow = window.open('', '', 'width=1000,height=800');
+      printWindow.document.write(`
+                <html>
+                <head>
+                    <title>批次列印 QR Codes</title>
+                    <style>
+                        body { font-family: 'Noto Sans TC', sans-serif; padding: 20px; }
+                        .qr-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; }
+                        .qr-card { border: 2px solid #667eea; border-radius: 10px; padding: 20px; text-align: center; page-break-inside: avoid; }
+                        .qr-card h3 { color: #667eea; margin-top: 0; }
+                        .qr-card img { width: 100%; max-width: 250px; }
+                        @media print { body { padding: 10px; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="qr-grid" id="qr-grid"></div>
+                </body>
+                </html>
+            `);
+
+      const grid = printWindow.document.getElementById('qr-grid');
+      for (const member of allMembers) {
+        try {
+          const response = await fetch(`${API_URL}/members/${member._id}/qrcode`);
+          const data = await response.json();
+          grid.innerHTML += `
+                        <div class="qr-card">
+                            <h3>${data.name}</h3>
+                            <p>${member.group || ''}</p>
+                            <img src="${data.qr_image}" alt="${data.name} QR Code">
+                        </div>
+                    `;
+        } catch (error) {
+          console.error(`Error loading QR for ${member.name}:`, error);
+        }
+      }
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); }, 1000);
+    }
+
+    // Export Members CSV
+    function exportMembersCSV() {
+      if (allMembers.length === 0) {
+        showToast('沒有會友資料可匯出', 'error');
+        return;
+      }
+      const csv = [
+        ['姓名', '電話', '小組', '建立日期'].join(','),
+        ...allMembers.map(m => [
+          m.name, m.phone || '', m.group || '', m.created_at || ''
+        ].join(','))
+      ].join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `會友資料_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      showToast('會友資料已匯出', 'success');
+    }
+
+    // Handle QR File Upload (Updated to use jsQR for image decoding is complex without canvas here, 
+    // so we might just alert user or keep it as is if they don't have camera)
+    // But for consistency let's try to verify if we can use file reader + image + canvas to decode
+    function handleQRFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+          if (code) {
+            processQRCode(code.data);
+          } else {
+            showToast('無法識別 QR Code', 'error');
+            document.getElementById('scanner-result-content').innerHTML = `
+                            <div style="color: #f44336; text-align: center;">
+                                <p>❌ 無法識別圖片中的 QR Code</p>
+                            </div>
+                        `;
+            document.getElementById('scanner-result').classList.add('show');
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Download CSV Template
+    function downloadTemplate() {
+      const csvContent = "\ufeffName,Phone,Group\n王小明,0912345678,社青\n陳大文,0987654321,學生";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "member_import_template.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Import Members
+    async function importMembers() {
+      const fileInput = document.getElementById('batch-file');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        showToast('請先選擇檔案', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Show loading state (could be improved)
+      showToast('匯入處理中...', 'success');
+
+      try {
+        const response = await fetch(`${API_URL}/members/import`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Update stats
+          document.getElementById('stat-total').textContent = result.total;
+          document.getElementById('stat-inserted').textContent = result.inserted;
+          document.getElementById('stat-skipped').textContent = result.skipped;
+
+          // Handle errors
+          const errorList = document.getElementById('error-list');
+          const errorDiv = document.getElementById('import-errors');
+          errorList.innerHTML = '';
+
+          if (result.errors && result.errors.length > 0) {
+            result.errors.forEach(err => {
+              const li = document.createElement('li');
+              li.textContent = err;
+              errorList.appendChild(li);
+            });
+            errorDiv.style.display = 'block';
+          } else {
+            errorDiv.style.display = 'none';
+          }
+
+          // Show result container
+          document.getElementById('import-result').style.display = 'block';
+
+          showToast(`匯入完成！成功新增 ${result.inserted} 筆`, 'success');
+
+          // Refresh member list if successful
+          if (result.inserted > 0) {
+            loadMembers();
+          }
+        } else {
+          showToast(result.error || '匯入失敗', 'error');
+        }
+      } catch (error) {
+        console.error('Import error:', error);
+        showToast('匯入發生錯誤', 'error');
+      }
+    }
+
+    // Show Toast
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.className = `toast ${type} show`;
+      document.getElementById('toast-message').textContent = message;
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    // --- Statistics Functionality ---
+    let weeklyChartInstance = null;
+    let sessionChartInstance = null;
+    let monthlyChartInstance = null;
+
+    function loadDashboard() {
+      loadWeeklyChart();
+      loadSessionChart();
+      loadMonthlyChart();
+    }
+
+    async function loadWeeklyChart() {
+      try {
+        const response = await fetch(`${API_URL}/stats/weekly`);
+        const data = await response.json();
+
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
+        if (weeklyChartInstance) weeklyChartInstance.destroy();
+
+        weeklyChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.daily_stats.map(d => d.date.split('-').slice(1).join('/')), // MM/DD
+            datasets: [{
+              label: '出勤人數',
+              data: data.daily_stats.map(d => d.count),
+              backgroundColor: '#667eea',
+              borderRadius: 5
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+
+    async function loadSessionChart() {
+      try {
+        const response = await fetch(`${API_URL}/stats/sessions`);
+        const data = await response.json();
+
+        const ctx = document.getElementById('sessionChart').getContext('2d');
+        if (sessionChartInstance) sessionChartInstance.destroy();
+
+        sessionChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: data.sessions.map(s => s.session_name),
+            datasets: [{
+              data: data.sessions.map(s => s.count),
+              backgroundColor: ['#4facfe', '#00f2fe', '#f093fb', '#f5576c']
+            }]
+          }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadMonthlyChart() {
+      try {
+        const response = await fetch(`${API_URL}/stats/monthly`);
+        const data = await response.json();
+
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        if (monthlyChartInstance) monthlyChartInstance.destroy();
+
+        monthlyChartInstance = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: ['會友', '訪客'],
+            datasets: [{
+              data: [data.member_count, data.visitor_count],
+              backgroundColor: ['#667eea', '#764ba2']
+            }]
+          }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // --- Shepherd Card Functionality ---
+
+    function switchModalTab(tabName) {
+      // Update Buttons
+      const buttons = document.querySelectorAll('#shepherd-card-modal .tab-button');
+      buttons.forEach(btn => btn.classList.remove('active'));
+
+      // Find specific button (based on order: Profile, Notes, Worship, QR)
+      if (tabName === 'profile') buttons[0].classList.add('active');
+      if (tabName === 'notes') buttons[1].classList.add('active');
+      if (tabName === 'worship') buttons[2].classList.add('active');
+      if (tabName === 'qrcode') buttons[3].classList.add('active');
+
+      // Update Content
+      const contents = document.querySelectorAll('.modal-tab-content');
+      contents.forEach(content => content.style.display = 'none');
+      document.getElementById(`modal-tab-${tabName}`).style.display = 'block';
+    }
+
+    async function openShepherdCard(event, memberId) {
+      // Prevent triggering if clicking buttons inside the card
+      if (event.target.tagName === 'BUTTON') return;
+
+      try {
+        const response = await fetch(`${API_URL}/members/${memberId}`);
+        const member = await response.json();
+
+        if (!response.ok) throw new Error(member.error || '無法載入會友資料');
+
+        // Populate Header
+        document.getElementById('sc-name').textContent = member.name;
+        document.getElementById('sc-group').textContent = `👥 ${member.group || '未分組'}`;
+        document.getElementById('sc-phone').textContent = `📞 ${member.phone || '未設定'}`;
+        document.getElementById('sc-last-attended').textContent = member.last_attended_date || '無記錄';
+        document.getElementById('sc-id').value = member._id;
+
+        // Populate Basic Info Form
+        document.getElementById('sc-input-birthday').value = member.birthday || '';
+        document.getElementById('sc-input-address').value = member.address || '';
+        document.getElementById('sc-input-email').value = member.email || '';
+        document.getElementById('sc-input-line_id').value = member.line_id || '';
+
+        // Render Notes
+        renderNotes(member.shepherding_notes || []);
+
+        // Populate QR Tab
+        document.getElementById('sc-qr-image').src = member.qr_data;
+
+        // Load Worship Life (Attendance History)
+        loadWorshipLife(memberId);
+
+        // Reset to first tab
+        switchModalTab('profile');
+
+        document.getElementById('shepherd-card-modal').classList.add('show');
+
+      } catch (error) {
+        console.error('Error opening shepherd card:', error);
+        showToast('無法載入會友詳細資料', 'error');
+      }
+    }
+
+    async function updateProfile(event) {
+      event.preventDefault();
+      const memberId = document.getElementById('sc-id').value;
+      const formData = new FormData(event.target);
+
+      // Fetch current member to preserve name/phone/group if not in form
+      try {
+        const getRes = await fetch(`${API_URL}/members/${memberId}`);
+        const currentMember = await getRes.json();
+
+        const data = {
+          name: currentMember.name,
+          phone: currentMember.phone,
+          group: currentMember.group,
+          birthday: formData.get('birthday'),
+          address: formData.get('address'),
+          email: formData.get('email'),
+          line_id: formData.get('line_id')
+        };
+
+        const response = await fetch(`${API_URL}/members/${memberId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          showToast('資料更新成功', 'success');
+          // Optional: loadMembers() to update main list if needed
+        } else {
+          const error = await response.json();
+          showToast(error.error || '更新失敗', 'error');
+        }
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        showToast('更新失敗', 'error');
+      }
+    }
+
+    async function addNote() {
+      const memberId = document.getElementById('sc-id').value;
+      const contentInput = document.getElementById('new-note-content');
+      const categoryInput = document.getElementById('new-note-category');
+
+      const content = contentInput.value.trim();
+      if (!content) {
+        showToast('請輸入內容', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/members/${memberId}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: content,
+            category: categoryInput.value,
+            author: 'Admin'
+          })
+        });
+
+        if (response.ok) {
+          showToast('紀錄已新增', 'success');
+          contentInput.value = '';
+
+          // Refresh notes
+          const memberRes = await fetch(`${API_URL}/members/${memberId}`);
+          const memberData = await memberRes.json();
+          renderNotes(memberData.shepherding_notes || []);
+        } else {
+          showToast('新增紀錄失敗', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding note:', error);
+        showToast('新增紀錄失敗', 'error');
+      }
+    }
+
+    function renderNotes(notes) {
+      const container = document.getElementById('notes-timeline');
+      if (!notes || notes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; margin-top: 20px;">尚無牧養紀錄</p>';
+        return;
+      }
+
+      // Sort by date desc
+      notes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      container.innerHTML = notes.map(note => {
+        const date = new Date(note.date);
+        const dateStr = date.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) + ' ' + date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
+        let badgeColor = '#667eea';
+        let categoryLabel = '一般';
+
+        if (note.category === 'visit') { badgeColor = '#4CAF50'; categoryLabel = '探訪'; }
+        if (note.category === 'prayer') { badgeColor = '#FF9800'; categoryLabel = '代禱'; }
+
+        return `
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 4px solid ${badgeColor};">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="font-size: 0.85em; color: #888;">${dateStr}</span>
+                        <span style="background: ${badgeColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75em;">${categoryLabel}</span>
+                    </div>
+                    <div style="color: #333; line-height: 1.5;">${note.content}</div>
+                    <div style="text-align: right; font-size: 0.8em; color: #aaa; margin-top: 4px;">-- ${note.author}</div>
+                </div>
+            `;
+      }).join('');
+    }
+
+    async function loadWorshipLife(memberId) {
+      const container = document.getElementById('modal-tab-worship');
+      container.innerHTML = '<div class="text-center" style="padding: 20px;">載入中...</div>';
+
+      try {
+        const response = await fetch(`${API_URL}/attendance?member_id=${memberId}&page_size=20`);
+        const result = await response.json();
+        const records = result.data || [];
+        // Support result.pagination.total if available
+        const totalVisits = result.pagination && result.pagination.total ? result.pagination.total : records.length;
+
+        if (!records || records.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: #666; padding: 40px;">
+              <p>📭 尚無出勤記錄</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = `
+          <div style="margin-bottom: 15px; padding: 0 5px;">
+             <span style="font-weight: bold; color: #555;">最近 20 筆記錄 (共 ${totalVisits} 次)</span>
+          </div>
+          <div style="overflow-x: auto; max-height: 400px;">
+            <table class="table" style="width: 100%; text-align: left; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 2px solid #eee;">
+                  <th style="padding: 10px;">日期</th>
+                  <th style="padding: 10px;">場次</th>
+                  <th style="padding: 10px;">狀態</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        html += records.map(record => {
+          const date = new Date(record.date).toLocaleDateString('zh-TW');
+          const sessionMap = { 'morning': '早堂', 'noon': '午堂', 'evening': '晚堂' };
+          const session = sessionMap[record.session] || record.session || '主日崇拜';
+
+          return `
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                      <td style="padding: 10px;">${date}</td>
+                      <td style="padding: 10px;">${session}</td>
+                      <td style="padding: 10px;">
+                        <span style="background: #e6fffa; color: #00b69b; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">已出席</span>
+                      </td>
+                    </tr>
+                  `;
+        }).join('');
+
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
+        container.innerHTML = html;
+
+      } catch (error) {
+        console.error('Error loading attendance history:', error);
+        container.innerHTML = '<div class="text-center text-danger" style="padding: 20px;">載入失敗</div>';
+      }
+    }
+  </script>
+</body>
+
+</html>

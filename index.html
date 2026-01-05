@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高榮禮拜堂主日崇拜報到系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <!-- jsQR Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ... Existing Styles ... */
+
+        body {
+            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card h3 {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            grid-column: 1 / -1;
+            margin-bottom: 10px;
+        }
+
+        input[type="date"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input[type="date"]:focus,
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans TC', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger:hover {
+            background: #ee5a6f;
+            transform: scale(1.05);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 10;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #2ed573;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ff4757;
+        }
+
+        /* QR Scanner Styles */
+        .scanner-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .scanner-toggle {
+            width: 100%;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            color: #333;
+            border: 2px dashed #667eea;
+        }
+
+        .scanner-toggle:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .scanner-wrapper {
+            display: none;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background: #000;
+            position: relative;
+        }
+
+        .scanner-wrapper.active {
+            display: block;
+        }
+
+        #scanner-video {
+            width: 100%;
+            display: block;
+            transform: scaleX(-1);
+            /* Mirror effect */
+        }
+
+        /* Mobile: Don't mirror back camera if usually it's back */
+        @media (max-width: 768px) {
+            #scanner-video {
+                transform: scaleX(1);
+            }
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 40px solid rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .scanner-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ff4757;
+            animation: scan-line 2s linear infinite;
+            box-shadow: 0 0 10px #ff4757;
+        }
+
+        @keyframes scan-line {
+            0% {
+                top: 0;
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
+
+        .upload-area {
+            border: 2px dashed #e0e0e0;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+            color: #667eea;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏛️ 高榮禮拜堂主日崇拜報到系統</h1>
+            <p>Church Attendance Management System</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>📅 今日出勤</h3>
+                <div class="number" id="todayCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>📊 總記錄數</h3>
+                <div class="number" id="totalCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>🕐 最近更新</h3>
+                <div class="number" id="lastUpdate" style="font-size: 1.5em;">-</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Attendance List -->
+            <div class="card">
+                <h2>📋 出勤名單</h2>
+
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="search-box">
+                        <input type="text" id="searchName" placeholder="🔍 搜尋姓名..." />
+                    </div>
+                    <input type="date" id="filterDateFrom" placeholder="開始日期" />
+                    <input type="date" id="filterDateTo" placeholder="結束日期" />
+                    <button class="btn btn-secondary" onclick="applyFilters()">篩選</button>
+                </div>
+
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <p>載入中...</p>
+                </div>
+
+                <div class="table-container">
+                    <table id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>姓名</th>
+                                <th style="text-align: center;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Check-in Form -->
+            <div class="card">
+                <h2>✅ 報到</h2>
+
+                <!-- Scanner Section -->
+                <button type="button" class="btn scanner-toggle" onclick="toggleScanner()">
+                    📷 開啟/關閉 QR Code 掃描器
+                </button>
+
+                <div id="scanner-wrapper" class="scanner-wrapper">
+                    <video id="scanner-video" playsinline></video>
+                    <canvas id="scanner-canvas" style="display:none;"></canvas>
+                    <div class="scanner-overlay"></div>
+                </div>
+
+                <div class="upload-area" onclick="document.getElementById('qr-file').click()">
+                    <p>📁 點擊上傳 QR Code 圖片</p>
+                    <input type="file" id="qr-file" class="hidden-input" accept="image/*"
+                        onchange="handleQRFile(event)">
+                </div>
+
+                <div id="scan-result"
+                    style="margin: 15px 0; display: none; text-align: center; padding: 10px; background: #e8f5e9; border-radius: 5px; color: #2e7d32;">
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <form id="attendanceForm">
+                    <div class="form-group">
+                        <label for="date">日期</label>
+                        <input type="date" id="date" name="date" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="name">姓名 (手動輸入)</label>
+                        <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required autocomplete="off" />
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        ✓ 確認報到
+                    </button>
+                </form>
+
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="refreshPage()">
+                        🔄 重新整理
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportToCSV()">
+                        📥 下載 CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const apiUrl = '/api';
+
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Set today's date
+        function setTodayDate() {
+            const currentDate = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = currentDate;
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                const response = await fetch(`${apiUrl}/stats`);
+                const stats = await response.json();
+
+                document.getElementById('todayCount').textContent = stats.today_count || 0;
+                document.getElementById('totalCount').textContent = stats.total_count || 0;
+                document.getElementById('lastUpdate').textContent = stats.latest_date || '-';
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        // Refresh attendance list
+        async function refreshAttendance(params = {}) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableBody = document.getElementById('attendanceBody');
+
+            loadingIndicator.classList.add('active');
+
+            try {
+                const queryString = new URLSearchParams(params).toString();
+                const url = `${apiUrl}/attendance${queryString ? '?' + queryString : ''}`;
+
+                const response = await fetch(url);
+                const result = await response.json();
+                // Handle both new paginated format and old array format
+                const data = result.data || result;
+
+                tableBody.innerHTML = '';
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="empty-state">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <p>目前沒有記錄</p>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    data.forEach(entry => {
+                        const row = tableBody.insertRow();
+                        row.innerHTML = `
+                            <td>${entry.date}</td>
+                            <td><strong>${entry.name}</strong></td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-danger" onclick="deleteAttendance('${entry._id}')">
+                                    🗑️ 刪除
+                                </button>
+                            </td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('載入資料失敗', 'error');
+            } finally {
+                loadingIndicator.classList.remove('active');
+            }
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const searchName = document.getElementById('searchName').value.trim();
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
+
+            const params = {};
+            if (searchName) params.search = searchName;
+            if (dateFrom) params.date_from = dateFrom;
+            if (dateTo) params.date_to = dateTo;
+
+            refreshAttendance(params);
+        }
+
+        // Real-time search
+        document.getElementById('searchName').addEventListener('input', function () {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                applyFilters();
+            }, 500);
+        });
+
+        // Form submission
+        document.getElementById('attendanceForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch(`${apiUrl}/attendance`, {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast('報到成功！', 'success');
+                    this.reset();
+                    setTodayDate();
+                    document.getElementById('name').focus();
+                    refreshAttendance();
+                    loadStatistics();
+                } else {
+                    showToast(result.error || '報到失敗', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('發生錯誤，請稍後再試', 'error');
+            }
+        });
+
+        // Delete attendance
+        async function deleteAttendance(attendanceId) {
+            if (!confirm('確定要刪除這筆記錄嗎？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/attendance/${attendanceId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast('刪除成功！', 'success');
+                    refreshAttendance();
+                    loadStatistics();
+                } else {
+                    showToast(result.error || '刪除失敗', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('發生錯誤，請稍後再試', 'error');
+            }
+        }
+
+        // Refresh page
+        function refreshPage() {
+            document.getElementById('searchName').value = '';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            setTodayDate();
+            refreshAttendance();
+            loadStatistics();
+            showToast('頁面已更新！', 'success');
+        }
+
+        // Export to CSV
+        async function exportToCSV() {
+            try {
+                const response = await fetch(`${apiUrl}/attendance`);
+                const result = await response.json();
+                const data = result.data || result; // Handle both formats
+
+                const csv = convertToCSV(data);
+                const csvData = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                const csvUrl = window.URL.createObjectURL(csvData);
+                const link = document.createElement('a');
+                link.href = csvUrl;
+                const filename = `attendance_${new Date().toISOString().split('T')[0]}.csv`;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showToast('CSV 檔案已下載！', 'success');
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('下載失敗', 'error');
+            }
+        }
+
+        // Convert to CSV
+        function convertToCSV(data) {
+            const header = ['日期', '姓名'];
+            const csvRows = [];
+            csvRows.push(header.join(','));
+            data.forEach(entry => {
+                const row = [entry.date, entry.name];
+                csvRows.push(row.join(','));
+            });
+            return csvRows.join('\n');
+        }
+
+        // Auto-focus name field on Enter
+        document.getElementById('date').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('name').focus();
+            }
+        });
+
+        // QR Scanner Logic
+        let videoStream;
+        let isScanning = false;
+
+        function toggleScanner() {
+            const wrapper = document.getElementById('scanner-wrapper');
+            if (wrapper.classList.contains('active')) {
+                stopCamera();
+            } else {
+                startCamera();
+            }
+        }
+
+        async function startCamera() {
+            const wrapper = document.getElementById('scanner-wrapper');
+            const video = document.getElementById('scanner-video');
+            const resultDiv = document.getElementById('scan-result');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                videoStream = stream;
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true);
+                video.play();
+
+                wrapper.classList.add('active');
+                resultDiv.style.display = 'none';
+
+                isScanning = true;
+                requestAnimationFrame(tick);
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showToast('無法存取相機，請確認權限或使用 HTTPS', 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            isScanning = false;
+            document.getElementById('scanner-wrapper').classList.remove('active');
+        }
+
+        function tick() {
+            if (!isScanning) return;
+
+            const video = document.getElementById('scanner-video');
+            const canvasElement = document.getElementById('scanner-canvas');
+            const canvas = canvasElement.getContext('2d');
+
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvasElement.height = video.videoHeight;
+                canvasElement.width = video.videoWidth;
+                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+
+                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+
+                if (code) {
+                    processQRCode(code.data);
+                }
+            }
+
+            if (isScanning) requestAnimationFrame(tick);
+        }
+
+        async function processQRCode(qrData) {
+            isScanning = false; // Pause scanning
+            const resultDiv = document.getElementById('scan-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '🔄 處理中...';
+
+            try {
+                const response = await fetch(`${apiUrl}/attendance/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        qr_data: qrData,
+                        session: 'noon' // Default to noon session
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `✅ ${result.name} 簽到成功！`;
+                    resultDiv.style.background = '#e8f5e9';
+                    resultDiv.style.color = '#2e7d32';
+                    showToast(`${result.name} 簽到成功！`, 'success');
+
+                    // Update stats and list
+                    refreshAttendance();
+                    loadStatistics();
+
+                    // Resume scanning after 2 seconds
+                    setTimeout(() => {
+                        resultDiv.style.display = 'none';
+                        isScanning = true;
+                        requestAnimationFrame(tick);
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || '簽到失敗');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ ${error.message}`;
+                resultDiv.style.background = '#ffebee';
+                resultDiv.style.color = '#c62828';
+                showToast(error.message, 'error');
+
+                // Resume scanning after 3 seconds
+                setTimeout(() => {
+                    resultDiv.style.display = 'none';
+                    isScanning = true;
+                    requestAnimationFrame(tick);
+                }, 3000);
+            }
+        }
+
+        async function handleQRFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (code) {
+                        processQRCode(code.data);
+                    } else {
+                        showToast('無法辨識 QR Code', 'error');
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // Reset input
+        }
+
+        // Initialize on page load
+        window.onload = function () {
+            setTodayDate();
+            refreshAttendance();
+            loadStatistics();
+            document.getElementById('name').focus();
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高榮禮拜堂主日崇拜報到系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow-y: auto; /* 添加垂直滚动条 */
+            max-height: 300px; /* 设置最大高度 */
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="date"],
+        input[type="text"],
+        button {
+            padding: 10px;
+            margin: 5px 0;
+            width: calc(100% - 22px);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .delete-button {
+            background-color: #f44336;
+        }
+
+        .delete-button:hover {
+            background-color: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>高榮禮拜堂主日崇拜報到系統</h1>
+
+        <!-- 表格用于显示当前数据 -->
+        <h2>登入名單</h2>
+        <div style="max-height: 300px; overflow-y: auto;">
+            <table id="attendanceTable">
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Action</th>
+                </tr>
+            </table>
+        </div>
+
+        <br>
+
+        <!-- 表单用于提交新的出勤记录 -->
+        <h2>報到</h2>
+        <form id="attendanceForm">
+            <label for="date">日期:</label>
+            <input type="date" id="date" name="date" required><br><br>
+            <label for="name">姓名:</label>
+            <input type="text" id="name" name="name" required><br><br>
+            <button type="submit">報到</button>
+        </form>
+
+        <!-- 按钮用于刷新页面 -->
+        <button onclick="refreshPage()">更新頁面</button>
+
+        <!-- 导出按钮 -->
+        <button onclick="exportToCSV()">下載 CSV</button>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:5050'; // API 地址
+
+        // 页面加载完成后获取当前出勤记录并显示在页面上
+        window.onload = function() {
+            setTodayDate(); // 设置日期为今天
+            refreshAttendance(); // 刷新当前出勤记录
+        };
+
+        // 设置日期为今天
+        function setTodayDate() {
+            const currentDate = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = currentDate;
+        }
+
+        // 刷新页面
+        function refreshPage() {
+            setTodayDate(); // 设置日期为今天
+            location.reload();
+        }
+
+        // 获取当前出勤记录并显示在页面上
+        function refreshAttendance() {
+            fetch(apiUrl + '/attendance')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('attendanceTable');
+                    table.innerHTML = ''; // 清空表格内容
+                    data.forEach(entry => {
+                        const row = table.insertRow();
+                        row.insertCell().textContent = entry.date;
+                        row.insertCell().textContent = entry.name;
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.classList.add('delete-button');
+                        deleteButton.addEventListener('click', function() {
+                            deleteAttendance(entry._id);
+                        });
+                        const cell = row.insertCell();
+                        cell.appendChild(deleteButton);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 表单提交时向 Flask 应用发送请求
+        document.getElementById('attendanceForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let formData = new FormData(this);
+            fetch(apiUrl + '/attendance', {
+                method: 'POST',
+                body: JSON.stringify(Object.fromEntries(formData)),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                document.getElementById('attendanceForm').reset();
+                setTodayDate(); // 设置日期为今天
+                refreshAttendance(); // 添加新的出勤记录后，重新加载页面显示所有出勤记录
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        // 删除出勤记录
+        function deleteAttendance(attendanceId) {
+            fetch(apiUrl + '/attendance?id=' + attendanceId, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                refreshAttendance(); // 删除成功后，重新加载页面显示所有出勤记录
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // 导出 CSV
+        function exportToCSV() {
+            fetch(apiUrl + '/attendance')
+                .then(response => response.json())
+                .then(data => {
+                    const csv = convertToCSV(data);
+                    const csvData = new Blob([csv], { type: 'text/csv' });
+                    const csvUrl = window.URL.createObjectURL(csvData);
+                    const link = document.createElement('a');
+                    link.href = csvUrl;
+                    link.setAttribute('download', 'attendance.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 转换为 CSV 格式
+        function convertToCSV(data) {
+            const header = ['Date', 'Name']; // CSV 标题行
+            const csvRows = [];
+            csvRows.push(header.join(',')); // 添加标题行到 CSV 行数组
+            data.forEach(entry => {
+                const row = [
+                    entry.date,
+                    entry.name
+                ];
+                csvRows.push(row.join(',')); // 添加数据行到 CSV 行数组
+            });
+            return csvRows.join('\n'); // 返回 CSV 格式的字符串
+        }
+    </script>
+</body>
+</html>
+

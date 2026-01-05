@@ -1,0 +1,53 @@
+# Dockerfile.optimized
+# 優化的 Dockerfile - 分離 MongoDB
+# Optimized Dockerfile - Separate MongoDB
+
+# Stage 1: Base Image
+FROM python:3.9-slim as base
+
+# 設定工作目錄
+WORKDIR /app
+
+# 安裝系統依賴
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends \
+  curl \
+  gcc \
+  && rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Dependencies
+FROM base as dependencies
+
+# 複製依賴檔案
+COPY requirements.txt .
+
+# 安裝 Python 套件
+RUN pip install --no-cache-dir --upgrade pip && \
+  pip install --no-cache-dir -r requirements.txt
+
+# Stage 3: Application
+FROM dependencies as application
+
+# 複製應用程式檔案
+COPY . .
+
+# 建立非 root 用戶
+RUN useradd -m -u 1000 appuser && \
+  chown -R appuser:appuser /app
+
+# 切換到非 root 用戶
+USER appuser
+
+# 設定環境變數
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=app.py
+
+# 暴露端口
+EXPOSE 5050
+
+# 健康檢查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5050/health || exit 1
+
+# 啟動應用
+CMD ["gunicorn", "-c", "gunicorn_config.py", "app:app"]

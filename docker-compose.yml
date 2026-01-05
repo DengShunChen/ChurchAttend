@@ -1,0 +1,88 @@
+# docker-compose.yml
+# Docker Compose 配置
+# Docker Compose Configuration
+
+version: '3.8'
+
+services:
+  # MongoDB 資料庫
+  mongodb:
+    image: mongo:7.0
+    container_name: attendance-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_DATABASE=attendance
+    ports:
+      - "27017:27017"
+    volumes:
+      - attendance-mongodb-data:/data/db
+      - attendance-mongodb-config:/data/configdb
+    networks:
+      - attendance-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/attendance --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # Flask 應用
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
+    container_name: attendance-app
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_DB=attendance
+      - FLASK_ENV=production
+      - FLASK_DEBUG=False
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5050
+    env_file:
+      - .env
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./:/app
+    networks:
+      - attendance-network
+    healthcheck:
+      test: curl -f http://localhost:5050/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: attendance-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./qr_manager.html:/usr/share/nginx/html/qr_manager.html:ro
+      - ./static:/usr/share/nginx/html/static:ro
+    networks:
+      - attendance-network
+
+volumes:
+  attendance-mongodb-data:
+    name: attendance-mongodb-data
+  attendance-mongodb-config:
+    name: attendance-mongodb-config
+
+networks:
+  attendance-network:
+    name: attendance-network
+    driver: bridge
