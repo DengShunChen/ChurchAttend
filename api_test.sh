@@ -4,6 +4,7 @@
 # API Endpoint Test Script
 
 API_URL="http://localhost:5050"
+TEST_ID=$(date +%s)
 
 echo "=============================================================="
 echo "🧪 API 端點測試 / API Endpoint Testing"
@@ -72,25 +73,25 @@ test_endpoint "/stats/monthly" "GET" "" "200" "Get Monthly Statistics"
 # 4. 出勤管理
 echo "=== 4. 出勤管理 Attendance Management ==="
 test_endpoint "/attendance" "GET" "" "200" "Get Attendance List"
-test_endpoint "/attendance" "POST" '{"date":"2025-12-30","name":"測試用戶"}' "201" "Create Attendance"
+test_endpoint "/attendance" "POST" '{"date":"2025-12-30","name":"測試用戶_'${TEST_ID}'"}' "201" "Create Attendance"
 test_endpoint "/attendance" "GET" "" "200" "Get Attendance List (after create)"
 
 # 5. 會友管理
 echo "=== 5. 會友管理 Member Management ==="
 test_endpoint "/members" "GET" "" "200" "Get Members List"
-test_endpoint "/members" "POST" '{"name":"測試會友","phone":"0912345678","group":"青年團契"}' "201" "Create Member"
+test_endpoint "/members" "POST" '{"name":"測試會友_'${TEST_ID}'","phone":"0912345678","group":"青年團契"}' "201" "Create Member"
 test_endpoint "/members" "GET" "" "200" "Get Members List (after create)"
 
 # 6. 訪客管理
 echo "=== 6. 訪客管理 Visitor Management ==="
 test_endpoint "/visitors" "GET" "" "200" "Get Visitors List"
-test_endpoint "/visitors/checkin" "POST" '{"name":"測試訪客","phone":"0987654321","how_to_know":"朋友介紹","session":"noon"}' "201" "Visitor Check-in"
+test_endpoint "/visitors/checkin" "POST" '{"name":"測試訪客_'${TEST_ID}'","phone":"0987654321","how_to_know":"朋友介紹","session":"noon"}' "201" "Visitor Check-in"
 test_endpoint "/visitors" "GET" "" "200" "Get Visitors List (after checkin)"
 
 # 7. 錯誤處理測試
 echo "=== 7. 錯誤處理 Error Handling ==="
 test_endpoint "/attendance" "POST" '{"name":"缺少日期"}' "400" "Missing Required Field"
-test_endpoint "/attendance" "POST" '{"date":"2025-12-30","name":"重複測試用戶"}' "409" "Duplicate Attendance"
+test_endpoint "/attendance" "POST" '{"date":"2025-12-30","name":"測試用戶_'${TEST_ID}'"}' "409" "Duplicate Attendance"
 test_endpoint "/members" "POST" '{}' "400" "Invalid Member Data"
 
 # 總結

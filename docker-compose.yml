@@ -71,6 +71,8 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./members.html:/usr/share/nginx/html/members.html:ro
+      - ./visitors.html:/usr/share/nginx/html/visitors.html:ro
       - ./qr_manager.html:/usr/share/nginx/html/qr_manager.html:ro
       - ./static:/usr/share/nginx/html/static:ro
     networks:

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會友管理 - 高榮禮拜堂</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body class="theme-members">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        🏛️ 高榮禮拜堂
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">報到系統</a>
+        <a href="/members" class="nav-link active">會友管理</a>
+        <a href="/visitors" class="nav-link">訪客管理</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header">
+      <h1>👥 會友管理</h1>
+      <p>Member Management System</p>
+    </div>
+
+    <div class="card">
+      <div class="filters">
+        <div class="search-box">
+          <input type="text" id="searchTerm" placeholder="🔍 搜尋姓名、電話..." />
+        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          ➕ 新增會友
+        </button>
+      </div>
+
+      <div class="loading" id="loadingIndicator">
+        <div class="spinner"></div>
+        <p>載入中...</p>
+      </div>
+
+      <div class="table-container">
+        <table id="membersTable">
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>電話</th>
+              <th>小組</th>
+              <th>功能</th>
+            </tr>
+          </thead>
+          <tbody id="membersBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Member Modal -->
+  <div id="memberModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">新增會友</h2>
+        <span class="close" onclick="closeModal('memberModal')">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="memberForm">
+          <input type="hidden" id="memberId">
+          <div class="form-group">
+            <label for="name">姓名 *</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="phone">電話</label>
+            <input type="tel" id="phone" name="phone">
+          </div>
+          <div class="form-group">
+            <label for="group">所屬小組</label>
+            <input type="text" id="group" name="group">
+          </div>
+          <div class="form-group">
+            <label for="birthday">生日</label>
+            <input type="date" id="birthday" name="birthday">
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email">
+          </div>
+          <div class="form-group">
+            <label for="address">地址</label>
+            <textarea id="address" name="address" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="line_id">Line ID</label>
+            <input type="text" id="line_id" name="line_id">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('memberModal')">取消</button>
+        <button class="btn btn-primary" onclick="saveMember()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div id="qrModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header">
+        <h2>個人 QR Code</h2>
+        <span class="close" onclick="closeModal('qrModal')">&times;</span>
+      </div>
+      <div class="modal-body">
+        <h3 id="qrName" style="margin-bottom: 20px; color: #667eea;"></h3>
+        <div id="qrcode" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
+        <p style="color: #666; font-size: 0.9em;">請出示此 QR Code 進行報到</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center;">
+        <button class="btn btn-secondary" onclick="downloadQRCode()">下載圖片</button>
+        <button class="btn btn-primary" onclick="window.print()">列印</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/js/members.js"></script>
+</body>
+
+</html>
