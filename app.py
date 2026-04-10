@@ -2,7 +2,7 @@
 # 高榮禮拜堂主日崇拜報到系統 - 重構版後端 API
 # Church Attendance System - Refactored Backend API
 
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
 import os
@@ -42,6 +42,46 @@ def create_app(config_obj=None):
     
     # 設定 CORS
     CORS(app, origins=config_obj.CORS_ORIGINS)
+
+    # --- Admin token protection for sensitive endpoints ---
+    # Check-in flows should stay usable without admin token.
+    WRITE_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
+
+    @app.before_request
+    def require_admin_token():
+        path = request.path or ''
+        method = request.method
+
+        # Allow all reads
+        if method not in WRITE_METHODS:
+            return None
+
+        # Allow check-in without admin token
+        if method == 'POST' and (path == '/attendance' or path == '/attendance/scan' or path == '/visitors/checkin'):
+            return None
+
+        # Require admin token for destructive/admin actions
+        protected = False
+        if path.startswith('/members'):
+            protected = True
+        elif path.startswith('/attendance') and method == 'DELETE':
+            protected = True
+        elif path.startswith('/visitors') and method in ('PUT', 'PATCH', 'DELETE'):
+            protected = True
+
+        if not protected:
+            return None
+
+        expected = app.config.get('ADMIN_TOKEN')
+        if not expected:
+            logger.error("ADMIN_TOKEN missing; refusing write request")
+            return jsonify({'error': '伺服器未設定管理者金鑰 / Admin token not configured'}), 500
+
+        provided = request.headers.get('X-Admin-Token', '')
+        if provided != expected:
+            return jsonify({'error': '未授權 / Unauthorized'}), 401
+
+        return None
     
     # 連接資料庫
     try:

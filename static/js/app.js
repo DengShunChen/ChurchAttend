@@ -1,14 +1,4 @@
-const apiUrl = '/api';
-
-// Toast notification function
-function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.className = `toast show ${type}`;
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3000);
-}
+const { apiUrl, showToast, unwrapData, apiFetch } = window.AppCommon;
 
 // Set today's date
 function setTodayDate() {
@@ -19,8 +9,9 @@ function setTodayDate() {
 // Load statistics
 async function loadStatistics() {
   try {
-    const response = await fetch(`${apiUrl}/stats`);
-    const stats = await response.json();
+    const { res, body } = await apiFetch('/stats');
+    if (!res.ok) throw new Error(typeof body === 'object' ? body?.error : String(body));
+    const stats = body;
 
     document.getElementById('todayCount').textContent = stats.today_count || 0;
     document.getElementById('totalCount').textContent = stats.total_count || 0;
@@ -43,8 +34,7 @@ async function refreshAttendance(params = {}) {
 
     const response = await fetch(url);
     const result = await response.json();
-    // Handle both new paginated format and old array format
-    const data = result.data || result;
+    const data = unwrapData(result);
 
     tableBody.innerHTML = '';
 

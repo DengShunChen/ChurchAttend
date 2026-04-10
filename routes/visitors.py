@@ -38,7 +38,12 @@ def get_visitors():
         visitor_list = [VisitorModel.to_dict(v) for v in visitors]
         
         logger.info(f"Retrieved {len(visitor_list)} visitors")
-        return jsonify(visitor_list)
+        return jsonify({
+            'data': visitor_list,
+            'meta': {
+                'total': len(visitor_list)
+            }
+        })
         
     except Exception as e:
         logger.error(f"Error retrieving visitors: {str(e)}")

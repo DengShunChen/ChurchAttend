@@ -1,14 +1,4 @@
-const apiUrl = '/api';
-
-// Toast notification function
-function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.className = `toast show ${type}`;
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3000);
-}
+const { apiUrl, showToast, unwrapData, apiFetch } = window.AppCommon;
 
 // Load members list
 async function loadMembers() {
@@ -27,8 +17,7 @@ async function loadMembers() {
 
     const response = await fetch(url);
     const result = await response.json();
-    // Handle both new paginated format and old array format
-    let members = result.data || result;
+    let members = unwrapData(result);
 
     // Client-side filter
     if (Array.isArray(members) && searchTerm) {

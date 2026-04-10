@@ -44,7 +44,12 @@ def get_members():
         member_list = [MemberModel.to_dict(m) for m in members]
         
         logger.info(f"Retrieved {len(member_list)} members")
-        return jsonify(member_list)
+        return jsonify({
+            'data': member_list,
+            'meta': {
+                'total': len(member_list)
+            }
+        })
         
     except Exception as e:
         logger.error(f"Error retrieving members: {str(e)}")

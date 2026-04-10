@@ -5,6 +5,7 @@
 
 API_URL="http://localhost:5050"
 TEST_ID=$(date +%s)
+ADMIN_TOKEN="${ADMIN_TOKEN:-}"
 
 echo "=============================================================="
 echo "🧪 API 端點測試 / API Endpoint Testing"
@@ -29,10 +30,16 @@ test_endpoint() {
     
     test_count=$((test_count + 1))
     
+    local auth_header=()
+    if [ ! -z "$ADMIN_TOKEN" ]; then
+        auth_header=(-H "X-Admin-Token: $ADMIN_TOKEN")
+    fi
+
     if [ -z "$data" ]; then
-        response=$(curl -s -w "\n%{http_code}" -X $method "$API_URL$endpoint")
+        response=$(curl -s -w "\n%{http_code}" -X $method "$API_URL$endpoint" "${auth_header[@]}")
     else
         response=$(curl -s -w "\n%{http_code}" -X $method "$API_URL$endpoint" \
+            "${auth_header[@]}" \
             -H "Content-Type: application/json" \
             -d "$data")
     fi
@@ -79,7 +86,7 @@ test_endpoint "/attendance" "GET" "" "200" "Get Attendance List (after create)"
 # 5. 會友管理
 echo "=== 5. 會友管理 Member Management ==="
 test_endpoint "/members" "GET" "" "200" "Get Members List"
-test_endpoint "/members" "POST" '{"name":"測試會友_'${TEST_ID}'","phone":"0912345678","group":"青年團契"}' "201" "Create Member"
+test_endpoint "/members" "POST" '{"name":"測試會友_'${TEST_ID}'","phone":"0912345678","group":"青年團契"}' "201" "Create Member (requires token)"
 test_endpoint "/members" "GET" "" "200" "Get Members List (after create)"
 
 # 6. 訪客管理

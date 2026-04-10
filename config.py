@@ -41,6 +41,10 @@ class Config:
     
     # CORS 配置
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*').split(',')
+
+    # Admin token (protect destructive/write APIs)
+    # Use header: X-Admin-Token: <token>
+    ADMIN_TOKEN = os.getenv('ADMIN_TOKEN')
     
     # 快取配置
     CACHE_TYPE = os.getenv('CACHE_TYPE', 'simple')
@@ -115,6 +119,12 @@ class ProductionConfig(Config):
         
         if cls.CORS_ORIGINS == ['*']:
             raise ValueError("CORS_ORIGINS should be restricted in production")
+
+        if not cls.ADMIN_TOKEN:
+            raise ValueError("ADMIN_TOKEN must be set in production")
+
+        if len(cls.ADMIN_TOKEN) < 16:
+            raise ValueError("ADMIN_TOKEN must be at least 16 characters long")
         
         return True
 
