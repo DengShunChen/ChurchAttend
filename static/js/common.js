@@ -45,6 +45,35 @@
     }
   }
 
+  function initAdminTokenFromUrl() {
+    // Allow one-time provisioning without UI:
+    // - http://localhost/?admin_token=...  (query)
+    // - http://localhost/#admin_token=...  (hash)
+    try {
+      const url = new URL(window.location.href);
+
+      const qToken = url.searchParams.get('admin_token');
+      if (qToken) {
+        setAdminToken(qToken);
+        url.searchParams.delete('admin_token');
+        window.history.replaceState({}, '', url.toString());
+        showToast('管理金鑰已設定（從網址參數）', 'success');
+        return;
+      }
+
+      const hash = (url.hash || '').replace(/^#/, '');
+      if (hash.startsWith('admin_token=')) {
+        const hToken = decodeURIComponent(hash.slice('admin_token='.length));
+        if (hToken) setAdminToken(hToken);
+        url.hash = '';
+        window.history.replaceState({}, '', url.toString());
+        showToast('管理金鑰已設定（從網址片段）', 'success');
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   function isWriteMethod(method) {
     const m = String(method || 'GET').toUpperCase();
     return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
@@ -72,63 +101,6 @@
     return { res, body };
   }
 
-  function initAdminTokenUI() {
-    const openBtn = document.getElementById('adminTokenBtn');
-    const modal = document.getElementById('adminTokenModal');
-    const input = document.getElementById('adminTokenInput');
-    const saveBtn = document.getElementById('adminTokenSaveBtn');
-    const clearBtn = document.getElementById('adminTokenClearBtn');
-    const closeBtn = document.getElementById('adminTokenCloseBtn');
-
-    if (!openBtn || !modal || !input || !saveBtn || !clearBtn || !closeBtn) return;
-
-    const open = () => {
-      input.value = getAdminToken();
-      modal.classList.add('show');
-      input.focus();
-      input.select();
-    };
-    const close = () => modal.classList.remove('show');
-
-    openBtn.addEventListener('click', open);
-    closeBtn.addEventListener('click', close);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) close();
-    });
-
-    saveBtn.addEventListener('click', () => {
-      const ok = setAdminToken(input.value.trim());
-      if (ok) {
-        showToast('管理金鑰已儲存（僅存於本機瀏覽器）', 'success');
-        close();
-      } else {
-        showToast('儲存失敗（瀏覽器可能禁止 localStorage）', 'error');
-      }
-    });
-
-    clearBtn.addEventListener('click', () => {
-      const ok = clearAdminToken();
-      if (ok) {
-        input.value = '';
-        showToast('管理金鑰已清除', 'success');
-        close();
-      } else {
-        showToast('清除失敗（瀏覽器可能禁止 localStorage）', 'error');
-      }
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        saveBtn.click();
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        close();
-      }
-    });
-  }
-
   window.AppCommon = {
     apiUrl,
     showToast,
@@ -137,7 +109,10 @@
     getAdminToken,
     setAdminToken,
     clearAdminToken,
-    initAdminTokenUI
+    initAdminTokenFromUrl
   };
+
+  // Auto-run: provision token from URL (no UI)
+  initAdminTokenFromUrl();
 })();
 
