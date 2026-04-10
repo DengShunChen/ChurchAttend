@@ -20,6 +20,7 @@
         <a href="/" class="nav-link">報到系統</a>
         <a href="/members" class="nav-link">會友管理</a>
         <a href="/visitors" class="nav-link active">訪客管理</a>
+        <button id="adminTokenBtn" class="btn btn-secondary btn-sm" type="button">🔑 管理金鑰</button>
       </div>
     </div>
   </nav>
@@ -110,8 +111,32 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Admin Token Modal -->
+  <div id="adminTokenModal" class="modal">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2>🔑 管理金鑰</h2>
+        <span class="close" id="adminTokenCloseBtn">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="adminTokenInput">ADMIN_TOKEN（只會存於本機瀏覽器 localStorage）</label>
+          <input type="password" id="adminTokenInput" autocomplete="off" placeholder="貼上你的 ADMIN_TOKEN">
+        </div>
+        <p style="color:#666;font-size:0.9em;line-height:1.5;">
+          需要權限的操作（更新/刪除訪客等）會自動帶上 <code>X-Admin-Token</code>。
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="adminTokenClearBtn" class="btn btn-danger" type="button">清除</button>
+        <button id="adminTokenSaveBtn" class="btn btn-primary" type="button">儲存</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/common.js"></script>
   <script src="/static/js/visitors.js"></script>
+  <script>window.AppCommon?.initAdminTokenUI?.();</script>
 </body>
 
 </html>
